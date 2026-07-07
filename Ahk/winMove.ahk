@@ -31,7 +31,7 @@ EWD_WatchMouse:
         SetTimer, EWD_WatchMouse, off
         return
     }
-    
+
     GetKeyState, EWD_EscapeState, Escape, P
     if EWD_EscapeState = D  ; Escape has been pressed, so drag is cancelled.
     {
@@ -39,7 +39,7 @@ EWD_WatchMouse:
         WinMove, ahk_id %EWD_MouseWin%,, %EWD_OriginalPosX%, %EWD_OriginalPosY%
         return
     }
-    
+
     ; Otherwise, reposition the window to match the change in mouse coordinates
     ; caused by the user having dragged the mouse:
     CoordMode, Mouse
@@ -51,22 +51,22 @@ EWD_WatchMouse:
     EWD_MouseStartY := EWD_MouseY
 return
 
-#InstallMouseHook 
-#InstallKeybdHook 
+#InstallMouseHook
+#InstallKeybdHook
 
 RALT & LButton::GoSub, SubRoutine
 Return
 
 SubRoutine:
-Loop, {
-    LButtonDown := GetKeyState("LButton","P")
-    RAltDown    := GetKeyState("RAlt","P")
-    If (LButtonDown+RAltDown) < 2
-    Break
-}
-GoSub, MainRoutine
+    Loop, {
+        LButtonDown := GetKeyState("LButton","P")
+        RAltDown    := GetKeyState("RAlt","P")
+        If (LButtonDown+RAltDown) < 2
+            Break
+    }
+    GoSub, MainRoutine
 Return
 
 MainRoutine:
-MsgBox,64,Hello!!!,Dear %A_UserName%... :)`n`n...Are you Happy?
+    MsgBox,64,Hello!!!,Dear %A_UserName%... :)`n`n...Are you Happy?
 Return
