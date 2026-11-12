@@ -277,8 +277,8 @@ InitializeEdgeDesktopSwitch()
 !9:: MoveToDesktop(9)
 
 ; Navigation relative
--:: Send("^#{Right}")
-0:: Send("^#{Left}")
+=:: Send("^#{Right}")
+-:: Send("^#{Left}")
 ; -:: JumpToDesktop(GetCurrentDesktop() + 1)
 ; 0:: JumpToDesktop(GetCurrentDesktop() - 1)
 

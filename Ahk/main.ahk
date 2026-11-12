@@ -34,7 +34,7 @@ ShowHelp(*) {
         helpGui.Add("Text", "xm y+16 w450", "BUREAUX VIRTUELS (maintenir CapsLock)")
         helpGui.Add("Text", "xm y+8 w450", "1 à 9 : aller au bureau correspondant.")
         helpGui.Add("Text", "xm y+4 w450", "Alt + 1 à 9 : déplacer la fenêtre active vers ce bureau.")
-        helpGui.Add("Text", "xm y+4 w450", "Tiret : bureau suivant `; 0 : bureau précédent.")
+        helpGui.Add("Text", "xm y+4 w450", "Plus : bureau suivant `; Tiret : bureau précédent.")
         helpGui.Add("Text", "xm y+4 w450",
             "Bord gauche/droit : continuer le mouvement du curseur vers le bord pour changer de bureau.")
         helpGui.Add("Text", "xm y+16 w450", "RACCOURCIS CAPSLOCK")
