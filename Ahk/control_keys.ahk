@@ -1,4 +1,5 @@
 #Requires AutoHotkey v2.0
+#NoTrayIcon
 #SingleInstance force
 
 ; #HotIf WinActive("ahk_exe Code.exe")
@@ -154,6 +155,92 @@ GetCurrentDesktop() {
     }
     return DllCall(GetCurrentProc, "Int") + 1
 }
+
+; --- CHANGEMENT DE BUREAU AU BORD DE L'ECRAN (Raw Input) ---
+global EdgeInputGui := 0
+global EdgeSwitchThreshold := 500
+global EdgeSwitchAccumulated := 0
+global EdgeSwitchDirection := 0
+global EdgeScreenLeft := 0
+global EdgeScreenRight := 0
+
+InitializeEdgeDesktopSwitch() {
+    global EdgeInputGui, EdgeScreenLeft, EdgeScreenRight
+
+    EdgeInputGui := Gui()
+    EdgeInputGui.Show("Hide")
+    OnMessage(0x00FF, HandleRawInput)
+
+    ; Usage page 1 / usage 2 = souris; RIDEV_INPUTSINK capte aussi en arriere-plan.
+    rawDevice := Buffer(A_PtrSize = 8 ? 16 : 12, 0)
+    NumPut("UShort", 1, rawDevice, 0)
+    NumPut("UShort", 2, rawDevice, 2)
+    NumPut("UInt", 0x00000100, rawDevice, 4)
+    NumPut("Ptr", EdgeInputGui.Hwnd, rawDevice, 8)
+
+    if !DllCall("RegisterRawInputDevices", "Ptr", rawDevice, "UInt", 1, "UInt", rawDevice.Size, "Int") {
+        MsgBox("Impossible d'activer la capture Raw Input pour le changement de bureau.", "Erreur Raw Input", 48)
+        return
+    }
+
+    EdgeScreenLeft := DllCall("GetSystemMetrics", "Int", 76, "Int")
+    screenWidth := DllCall("GetSystemMetrics", "Int", 78, "Int")
+    EdgeScreenRight := EdgeScreenLeft + screenWidth - 1
+}
+
+HandleRawInput(wParam, lParam, msg, hwnd) {
+    global EdgeSwitchThreshold, EdgeSwitchAccumulated, EdgeSwitchDirection
+    global EdgeScreenLeft, EdgeScreenRight
+
+    headerSize := A_PtrSize = 8 ? 24 : 16
+    dataSize := 0
+    result := DllCall("GetRawInputData", "Ptr", lParam, "UInt", 0x10000003, "Ptr", 0,
+        "UInt*", &dataSize, "UInt", headerSize, "UInt")
+
+    if (result != 0xFFFFFFFF && dataSize >= headerSize + 20) {
+        rawInput := Buffer(dataSize, 0)
+        bytesRead := DllCall("GetRawInputData", "Ptr", lParam, "UInt", 0x10000003, "Ptr", rawInput,
+            "UInt*", &dataSize, "UInt", headerSize, "UInt")
+
+        if (bytesRead >= headerSize + 20 && NumGet(rawInput, 0, "UInt") == 0) {
+            mouseFlags := NumGet(rawInput, headerSize, "UShort")
+            if !(mouseFlags & 1) {
+                deltaX := NumGet(rawInput, headerSize + 12, "Int")
+                if deltaX {
+                    point := Buffer(8, 0)
+                    if DllCall("GetCursorPos", "Ptr", point) {
+                        cursorX := NumGet(point, 0, "Int")
+                        direction := 0
+                        if (cursorX <= EdgeScreenLeft + 1 && deltaX < 0)
+                            direction := -1
+                        else if (cursorX >= EdgeScreenRight - 1 && deltaX > 0)
+                            direction := 1
+
+                        if direction {
+                            if (direction != EdgeSwitchDirection) {
+                                EdgeSwitchDirection := direction
+                                EdgeSwitchAccumulated := 0
+                            }
+                            EdgeSwitchAccumulated += Abs(deltaX)
+
+                            if (EdgeSwitchAccumulated >= EdgeSwitchThreshold) {
+                                Send(direction < 0 ? "^#{Left}" : "^#{Right}")
+                                EdgeSwitchAccumulated := 0
+                            }
+                        } else {
+                            EdgeSwitchDirection := 0
+                            EdgeSwitchAccumulated := 0
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return DllCall("DefWindowProcW", "Ptr", hwnd, "UInt", msg, "Ptr", wParam, "Ptr", lParam, "Ptr")
+}
+
+InitializeEdgeDesktopSwitch()
 
 ; --- RACCOURCIS CAPS LOCK ---
 ; Cette règle laisse CapsLock s'activer normalement, mais annule le changement si on l'a utilisé avec une autre touche.
